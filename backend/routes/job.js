@@ -11,18 +11,28 @@ const { errorSend, rejectRemaining } = require("../misc/tools");
  * @route GET /job
  * @desc return list of all jobs or by given email or by id
  * @access PUBLIC
- */
-router.get("/", (req, res) => {
-    let query = req.query.email ? { recruiterEmail: req.query.email } : {};
-    query = req.query.jobid ? { _id: req.query.jobid } : {};
-    Job.find(query)
+ */router.get("/", (req, res) => {
+    // Ensure we get the email of the logged-in recruiter
+    const recruiterEmail = req.query.email;
+
+    // If email is not provided, send an error as we cannot filter
+    if (!recruiterEmail) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+            error: "Recruiter email is required to fetch jobs"
+        });
+    }
+
+    // Query the jobs collection filtering by the recruiterEmail
+    Job.find({ recruiterEmail: recruiterEmail })
         .then((data) => {
-            if (req.query.email) {
-                data = data.filter((item) => item.removed !== "yes");
-            }
+            // Filter out any jobs that have been marked as removed
+            data = data.filter((item) => item.removed !== "yes");
             res.json(data);
         })
-        .catch(errorSend(res, "error in job search"));
+        .catch((error) => {
+            // Handle error in fetching jobs
+            errorSend(res, "Error fetching jobs", error);
+        });
 });
 
 /**

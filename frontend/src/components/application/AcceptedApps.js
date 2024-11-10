@@ -1,7 +1,6 @@
 import { Component, Fragment } from "react";
 import ls from "local-storage";
 import axios from "axios";
-import "bootstrap/dist/css/bootstrap.min.css";
 import { Rating } from "@material-ui/lab";
 
 class AcceptedApps extends Component {
@@ -30,10 +29,9 @@ class AcceptedApps extends Component {
             this.setState({ list: this.state.list.sort(cmp) });
         };
         return (
-            <div className="row" style={{ width: "90%", margin: "auto" }}>
+            <div className="flex flex-wrap justify-center space-x-2 my-4">
                 <button
-                    style={{ margin: "2px" }}
-                    className="col-auto-md btn btn-sm btn-info"
+                    className="bg-blue-500 text-white py-1 px-2 rounded text-xs"
                     onClick={sortBy((a, b) =>
                         a.user.name.toUpperCase() < b.user.name.toUpperCase() ? -1 : 1
                     )}
@@ -41,17 +39,15 @@ class AcceptedApps extends Component {
                     Sort by name
                 </button>
                 <button
-                    style={{ margin: "2px" }}
-                    className="col-auto-md btn btn-sm btn-info"
+                    className="bg-blue-500 text-white py-1 px-2 rounded text-xs"
                     onClick={sortBy((a, b) =>
                         a.user.name.toUpperCase() > b.user.name.toUpperCase() ? -1 : 1
                     )}
                 >
-                    Sort by name(rev)
+                    Sort by name (rev)
                 </button>
                 <button
-                    style={{ margin: "2px" }}
-                    className="col-auto-md btn btn-sm btn-info"
+                    className="bg-blue-500 text-white py-1 px-2 rounded text-xs"
                     onClick={sortBy((a, b) =>
                         a.job.title.toUpperCase() < b.job.title.toUpperCase() ? -1 : 1
                     )}
@@ -59,17 +55,15 @@ class AcceptedApps extends Component {
                     Sort by Job title
                 </button>
                 <button
-                    style={{ margin: "2px" }}
-                    className="col-auto-md btn btn-sm btn-info"
+                    className="bg-blue-500 text-white py-1 px-2 rounded text-xs"
                     onClick={sortBy((a, b) =>
                         a.job.title.toUpperCase() > b.job.title.toUpperCase() ? -1 : 1
                     )}
                 >
-                    Sort by Job title(rev)
+                    Sort by Job title (rev)
                 </button>
                 <button
-                    style={{ margin: "2px" }}
-                    className="col-auto-md btn btn-sm btn-info"
+                    className="bg-blue-500 text-white py-1 px-2 rounded text-xs"
                     onClick={sortBy((a, b) =>
                         new Date(a.job.postingDate) < new Date(b.job.postingDate) ? -1 : 1
                     )}
@@ -77,13 +71,12 @@ class AcceptedApps extends Component {
                     Sort by date of joining
                 </button>
                 <button
-                    style={{ margin: "2px" }}
-                    className="col-auto-md btn btn-sm btn-info"
+                    className="bg-blue-500 text-white py-1 px-2 rounded text-xs"
                     onClick={sortBy((a, b) =>
                         new Date(a.job.postingDate) > new Date(b.job.postingDate) ? -1 : 1
                     )}
                 >
-                    Sort by date of joining(rev)
+                    Sort by date of joining (rev)
                 </button>
             </div>
         );
@@ -108,19 +101,9 @@ class AcceptedApps extends Component {
         };
         return (
             <div
-                className="row"
-                style={{
-                    borderColor: "black",
-                    border: "10px",
-                    backgroundColor: "#eee",
-                    margin: "auto",
-                    marginTop: "25px",
-                    width: "50%",
-                    borderRadius: "10px",
-                    padding: "10px",
-                }}
+                className="bg-gray-100 border border-black rounded-lg p-4 mt-6 mx-auto w-1/2"
             >
-                <div style={{ width: "75%", margin: "auto" }}>
+                <div className="w-3/4 mx-auto">
                     <b>Name: </b> {user.name} <br />
                     <b>Date of joining: </b>
                     {new Date(job.postingDate).toLocaleDateString("ca")}
@@ -128,8 +111,8 @@ class AcceptedApps extends Component {
                     <b>Job type: </b> {job.type} <br />
                     <b>Job title: </b> {job.title} <br />
                     <br />
-                    <div className="row">
-                        <b className="">Rate applicant: </b>
+                    <div className="flex items-center">
+                        <b className="mr-2">Rate applicant: </b>
                         <Rating value={getCurrRating(user)} onChange={this.rateUser(user.email)} />
                     </div>
                     <br />
@@ -141,9 +124,9 @@ class AcceptedApps extends Component {
     render() {
         return (
             <Fragment>
-                <h1>Your Accepted Applicants</h1>
-                <div style={{ alignItems: "center" }}>{this.configureSection()}</div>
-                <div className="container">
+                <h1 className="text-2xl font-bold text-center my-6">Your Accepted Applicants</h1>
+                <div className="flex justify-center">{this.configureSection()}</div>
+                <div className="container mx-auto">
                     {this.state.list.map((item) => this.createCard(item.user, item.job))}
                 </div>
             </Fragment>

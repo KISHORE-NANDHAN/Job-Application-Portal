@@ -1,11 +1,8 @@
 import { Component, Fragment } from "react";
 import ls from "local-storage";
 import axios from "axios";
-import "bootstrap/dist/css/bootstrap.min.css";
 import EditIcon from "@material-ui/icons/Edit";
 import { Delete } from "@material-ui/icons";
-
-const cellStyle = { textAlign: "center", verticalAlign: "middle" };
 
 class ListJobs extends Component {
     constructor() {
@@ -48,6 +45,7 @@ class ListJobs extends Component {
         console.log("edit: " + url);
         window.location = url;
     };
+
     onCancel = (index) => (e) => {
         e.preventDefault();
         const jobid = this.state.jobs[index]._id;
@@ -67,60 +65,57 @@ class ListJobs extends Component {
     render() {
         return (
             <Fragment>
-                <h1>Job listings</h1>
-                <br />
-                <table className="table table-hover responsive bordered">
-                    <thead className="thead-dark">
-                        <tr key="head">
-                            <th style={cellStyle} scope="col">
-                                Title
-                            </th>
-                            <th style={cellStyle} scope="col">
-                                Date of Posting
-                            </th>
-                            <th style={cellStyle} scope="col">
-                                No.of Applications
-                            </th>
-                            <th style={cellStyle} scope="col">
-                                Positions
-                            </th>
-                            <th style={cellStyle} scope="col">
-                                Edit
-                            </th>
-                            <th style={cellStyle} scope="col">
-                                Delete
-                            </th>
+                <h1 className="text-3xl font-semibold mb-6">Job Listings</h1>
+                <table className="min-w-full table-auto border-collapse">
+                    <thead className="bg-gray-800 text-white">
+                        <tr>
+                            <th className="px-4 py-2 text-center">Title</th>
+                            <th className="px-4 py-2 text-center">Date of Posting</th>
+                            <th className="px-4 py-2 text-center">No. of Applications</th>
+                            <th className="px-4 py-2 text-center">Positions</th>
+                            <th className="px-4 py-2 text-center">Edit</th>
+                            <th className="px-4 py-2 text-center">Delete</th>
                         </tr>
                     </thead>
                     <tbody>
                         {this.state.jobs.map((item, index) => {
                             return (
-                                <tr key={index}>
-                                    <td onClick={this.onView(index)} style={cellStyle}>
+                                <tr key={index} className="hover:bg-gray-100">
+                                    <td
+                                        className="px-4 py-2 text-center cursor-pointer"
+                                        onClick={this.onView(index)}
+                                    >
                                         {item.title}
                                     </td>
-                                    <td onClick={this.onView(index)} style={cellStyle}>
+                                    <td
+                                        className="px-4 py-2 text-center cursor-pointer"
+                                        onClick={this.onView(index)}
+                                    >
                                         {new Date(item.postingDate).toDateString()}
                                     </td>
-                                    <td onClick={this.onView(index)} style={cellStyle}>
+                                    <td
+                                        className="px-4 py-2 text-center cursor-pointer"
+                                        onClick={this.onView(index)}
+                                    >
                                         {item.appliedCnt}
                                     </td>
-                                    <td onClick={this.onView(index)} style={cellStyle}>
+                                    <td
+                                        className="px-4 py-2 text-center cursor-pointer"
+                                        onClick={this.onView(index)}
+                                    >
                                         {item.maxPositions}
                                     </td>
-                                    <td style={cellStyle} onClick={(e) => e.preventDefault()}>
+                                    <td className="px-4 py-2 text-center">
                                         <button
-                                            className="btn btn-sm btn-outline-warning"
-                                            style={{ margin: "10px" }}
+                                            className="bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600"
                                             onClick={this.onEdit(index)}
                                         >
                                             <EditIcon />
                                         </button>
                                     </td>
-                                    <td style={cellStyle}>
+                                    <td className="px-4 py-2 text-center">
                                         <button
-                                            className="btn btn-sm btn-outline-danger"
-                                            style={{ margin: "10px" }}
+                                            className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
                                             onClick={this.onCancel(index)}
                                         >
                                             <Delete />

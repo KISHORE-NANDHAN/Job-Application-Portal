@@ -41,6 +41,10 @@ const jobSchema = new Schema({
         type: [String],
         required: false,
     },
+    jobImg: {
+        type : String,
+        required:true
+    },
     type: {
         type: String,
         required: false,

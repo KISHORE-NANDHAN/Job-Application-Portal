@@ -1,8 +1,8 @@
 import { Component } from "react";
 import ls from "local-storage";
 import axios from "axios";
-import "bootstrap/dist/css/bootstrap.min.css";
-import style from "../styles";
+import { storage } from "/src/firebase.js"; // Import storage from Firebase setup
+import "tailwindcss/tailwind.css"; // Ensure you have Tailwind set up
 
 class CreateJob extends Component {
     constructor() {
@@ -18,6 +18,7 @@ class CreateJob extends Component {
             type: "Work From Home",
             duration: 0,
             salary: 0,
+            imageUrl: "", // State to store image URL
         };
     }
 
@@ -30,46 +31,89 @@ class CreateJob extends Component {
 
     onSubmit = (e) => {
         e.preventDefault();
+        const jobData = {
+            ...this.state,
+            imageUrl: this.state.imageUrl,
+        };
+
         axios
-            .post("/job/create", this.state)
+            .post("/job/create", jobData)
             .then((res) => {
-                alert("Job Added Succesfully !");
+                alert("Job Added Successfully!");
                 window.location.reload();
             })
-            .catch((res) => {
-                alert(res.response.data.error);
+            .catch((err) => {
+                alert(err.response.data.error);
             });
+    };
+
+    handleSkillToggle = (skill) => {
+        this.setState((prevState) => {
+            const newSkills = prevState.requiredSkills.includes(skill)
+                ? prevState.requiredSkills.filter((s) => s !== skill)
+                : [...prevState.requiredSkills, skill];
+            return { requiredSkills: newSkills };
+        });
+    };
+
+    handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const storageRef = storage.ref(`images/${file.name}`);
+            const uploadTask = storageRef.put(file);
+
+            uploadTask.on(
+                "state_changed",
+                (snapshot) => {
+                    // Optionally show progress here
+                },
+                (error) => {
+                    console.log(error);
+                    alert("Error uploading image.");
+                },
+                () => {
+                    uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+                        this.setState({ imageUrl: downloadURL });
+                    });
+                }
+            );
+        }
     };
 
     render() {
         return (
-            <div className="container">
-                <h1>Create New Job</h1>
+            <div className="container mx-auto p-6">
+                <h1 className="text-2xl font-semibold mb-6">Create New Job</h1>
                 <form onSubmit={this.onSubmit}>
-                    <div className="form-group">
-                        <label>Title: </label>
+                    {/* Title */}
+                    <div className="mb-4">
+                        <label className="block text-lg font-medium">Title:</label>
                         <input
                             required
                             id="title"
                             type="text"
-                            className="form-control"
+                            className="w-full p-2 border border-gray-300 rounded"
                             onChange={this.onChange(String)}
                         />
                     </div>
-                    <div className="form-group">
-                        <label>Salary: </label>
+
+                    {/* Salary */}
+                    <div className="mb-4">
+                        <label className="block text-lg font-medium">Salary:</label>
                         <input
                             id="salary"
                             min="0"
                             step="1"
                             required
                             type="number"
-                            className="form-control"
+                            className="w-full p-2 border border-gray-300 rounded"
                             onChange={this.onChange(Number)}
                         />
                     </div>
-                    <div className="form-group">
-                        <label>Duration: </label>
+
+                    {/* Duration */}
+                    <div className="mb-4">
+                        <label className="block text-lg font-medium">Duration (Months):</label>
                         <input
                             id="duration"
                             min="0"
@@ -77,57 +121,62 @@ class CreateJob extends Component {
                             step="1"
                             required
                             type="number"
-                            className="form-control"
+                            className="w-full p-2 border border-gray-300 rounded"
                             onChange={this.onChange(Number)}
                         />
                     </div>
-                    <div className="form-group">
-                        <label> Type : </label>
-                        <div style={{ display: "inline", marginLeft: "5px" }} className="dropdown">
-                            <select required id="type" onChange={this.onChange(String)}>
-                                <option className="dropdown-item" value="Work From Home">
-                                    Work From Home
-                                </option>
-                                <option className="dropdown-item" value="Full Time">
-                                    Full Time
-                                </option>
-                                <option className="dropdown-item" value="Part Time">
-                                    Part Time
-                                </option>
-                            </select>
-                        </div>
+
+                    {/* Type */}
+                    <div className="mb-4">
+                        <label className="block text-lg font-medium">Type:</label>
+                        <select
+                            required
+                            id="type"
+                            className="w-full p-2 border border-gray-300 rounded"
+                            onChange={this.onChange(String)}
+                        >
+                            <option value="Work From Home">Work From Home</option>
+                            <option value="Full Time">Full Time</option>
+                            <option value="Part Time">Part Time</option>
+                        </select>
                     </div>
-                    <div className="form-group">
-                        <label>Max Number of Applicants: </label>
+
+                    {/* Max Applicants */}
+                    <div className="mb-4">
+                        <label className="block text-lg font-medium">Max Number of Applicants:</label>
                         <input
                             id="maxApplicant"
                             type="number"
                             min="0"
                             step="1"
                             required
-                            className="form-control"
+                            className="w-full p-2 border border-gray-300 rounded"
                             onChange={this.onChange(Number)}
                         />
                     </div>
-                    <div className="form-group">
-                        <label>Max Number of Positions: </label>
+
+                    {/* Max Positions */}
+                    <div className="mb-4">
+                        <label className="block text-lg font-medium">Max Number of Positions:</label>
                         <input
                             id="maxPositions"
                             type="number"
                             min="0"
                             step="1"
                             required
-                            className="form-control"
+                            className="w-full p-2 border border-gray-300 rounded"
                             onChange={this.onChange(Number)}
                         />
                     </div>
-                    <div className="form-group">
-                        <label>Posting Date: </label>
+
+                    {/* Posting Date */}
+                    <div className="mb-4">
+                        <label className="block text-lg font-medium">Posting Date:</label>
                         <input
                             id="postingDate"
                             type="date"
                             required
-                            className="form-control"
+                            className="w-full p-2 border border-gray-300 rounded"
                             onChange={(e) => {
                                 e.preventDefault();
                                 const val = new Date(e.target.value);
@@ -135,118 +184,78 @@ class CreateJob extends Component {
                             }}
                         />
                     </div>
-                    <div className="form-group">
-                        <label>Deadline: </label>
-                        <div className="form-group">
-                            <input
-                                className="form-control"
-                                type="date"
-                                required
-                                max="9999-12-12T00:00:00.00"
-                                onChange={(e) => {
-                                    e.preventDefault();
-                                    let deadline = new Date(this.state.deadline);
-                                    const val = new Date(e.target.value);
-                                    deadline.setFullYear(val.getFullYear());
-                                    deadline.setMonth(val.getMonth());
-                                    deadline.setDate(val.getDate());
-                                    this.setState({ deadline: deadline });
-                                }}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <input
-                                required
-                                className="form-control"
-                                type="time"
-                                max="9999-12-12T00:00:00.00"
-                                onChange={(e) => {
-                                    e.preventDefault();
-                                    let deadline = new Date(this.state.deadline);
-                                    const val = new Date(
-                                        deadline.toDateString() + " " + e.target.value
-                                    );
 
-                                    deadline.setHours(val.getHours());
-                                    deadline.setMinutes(val.getMinutes());
-                                    this.setState({ deadline: deadline });
-                                }}
-                            />
-                        </div>
-                    </div>
-                    <div className="form-group">
-                        <label>Required Skills:</label>
-                        <button
-                            className={style.addBtnClass}
-                            style={{ margin: "4px" }}
-                            onClick={(e) => {
+                    {/* Deadline */}
+                    <div className="mb-4">
+                        <label className="block text-lg font-medium">Deadline:</label>
+                        <input
+                            className="w-full p-2 border border-gray-300 rounded mb-2"
+                            type="date"
+                            required
+                            onChange={(e) => {
                                 e.preventDefault();
-                                this.setState({
-                                    requiredSkills: [...this.state.requiredSkills, ""],
-                                });
+                                let deadline = new Date(this.state.deadline);
+                                const val = new Date(e.target.value);
+                                deadline.setFullYear(val.getFullYear());
+                                deadline.setMonth(val.getMonth());
+                                deadline.setDate(val.getDate());
+                                this.setState({ deadline: deadline });
                             }}
-                        >
-                            Add
-                        </button>
-                        {this.state.requiredSkills.map((item, index) => {
-                            return (
-                                <div>
-                                    <input
-                                        required
-                                        list="languages"
-                                        value={item}
-                                        onChange={(e) => {
-                                            e.preventDefault();
-                                            this.setState({
-                                                requiredSkills: this.state.requiredSkills.map(
-                                                    (xitem, xindex) => {
-                                                        return xindex === index
-                                                            ? e.target.value
-                                                            : xitem;
-                                                    }
-                                                ),
-                                            });
-                                        }}
-                                    />
-                                    {style.crossBtnGenerator((e) => {
-                                        e.preventDefault();
-                                        this.setState({
-                                            requiredSkills: this.state.requiredSkills.filter(
-                                                (xitem, xindex) => xindex !== index
-                                            ),
-                                        });
-                                    })}
-                                </div>
-                            );
-                        })}
+                        />
+                        <input
+                            required
+                            className="w-full p-2 border border-gray-300 rounded"
+                            type="time"
+                            onChange={(e) => {
+                                e.preventDefault();
+                                let deadline = new Date(this.state.deadline);
+                                const val = new Date(deadline.toDateString() + " " + e.target.value);
+                                deadline.setHours(val.getHours());
+                                deadline.setMinutes(val.getMinutes());
+                                this.setState({ deadline: deadline });
+                            }}
+                        />
                     </div>
-                    <div className="row justify-content-start">
-                        <div style={{ margin: "10px" }}>
-                            <button type="submit" className="btn btn-primary">
-                                Submit
-                            </button>
-                        </div>
-                        <div style={{ margin: "10px" }}>
-                            <button
-                                className="btn btn-secondary"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    window.location = "/";
-                                }}
-                            >
-                                Cancel
-                            </button>
+
+                    {/* Required Skills (Domains) */}
+                    <div className="mb-4">
+                        <label className="block text-lg font-medium">Required Skills (Domains):</label>
+                        <div className="flex space-x-4">
+                            {["C", "Python", "Java", "Go", "JavaScript", "C++"].map((skill) => (
+                                <button
+                                    key={skill}
+                                    type="button"
+                                    className={`${
+                                        this.state.requiredSkills.includes(skill)
+                                            ? "bg-green-500"
+                                            : "bg-gray-300"
+                                    } px-4 py-2 rounded-full text-white`}
+                                    onClick={() => this.handleSkillToggle(skill)}
+                                >
+                                    {skill}
+                                </button>
+                            ))}
                         </div>
                     </div>
+
+                    {/* Image Upload */}
+                    <div className="mb-4">
+                        <label className="block text-lg font-medium">Upload Image:</label>
+                        <input
+                            type="file"
+                            onChange={this.handleImageUpload}
+                            className="w-full p-2 border border-gray-300 rounded"
+                        />
+                    </div>
+
+                    {/* Submit */}
+                    <button
+                        type="submit"
+                        className="w-full py-3 bg-blue-500 text-white rounded-full"
+                    >
+                        Create Job
+                    </button>
                 </form>
-                <datalist id="languages">
-                    <option value="C" />
-                    <option value="C++" />
-                    <option value="Python" />
-                    <option value="Java" />
-                    <option value="Haskell" />
-                    <option value="Go" />
-                </datalist>
             </div>
         );
     }

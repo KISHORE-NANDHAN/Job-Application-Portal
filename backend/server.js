@@ -4,7 +4,6 @@ const mongoose = require("mongoose");
 const DB_NAME = "jobsdb";
 const PORT = 4000;
 
-const logger = require("./logger");
 const userRouter = require("./routes/user");
 const jobRouter = require("./routes/job");
 const appRouter = require("./routes/application");
@@ -14,7 +13,6 @@ const app = express();
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(logger);
 
 // adding routes
 app.use("/user", userRouter);
