@@ -16,7 +16,7 @@ class ExtApplicantProfile extends React.Component {
   };
 
   render() {
-    const skills = ["C", "C++", "Python", "Java", "Haskell", "Go"]; // Add more skills as needed
+    const skills = ["C", "C++", "Python", "Java", "Flutter","Dart","Kotlin","Android Developer","React","NodeJs","Django","Machine Learning","Data Analyst","Data Scientist","Web Developer","Angular"]; // Add more skills as needed
 
     return (
       <Fragment>
@@ -30,7 +30,7 @@ class ExtApplicantProfile extends React.Component {
                   e.preventDefault();
                   this.handleSkillToggle(skill);  // Toggle the skill selection
                 }}
-                className={`py-2 px-4 rounded-full border-2 ${this.props.user.skills.includes(skill) ? "bg-blue-500 text-white" : "bg-white text-blue-500 border-blue-500"} hover:bg-blue-500 hover:text-white transition-all duration-200`}
+                className={`py-2 px-4 rounded-full border-2 ${this.props.user.skills.includes(skill) ? "bg-blue-500 text-white" : "bg-white text-blue-500 border-blue-500"} hover:bg-blue-500 hover:text-black transition-all duration-200`}
               >
                 {skill} {/* No "Select" or "Deselect" text displayed */}
               </button>

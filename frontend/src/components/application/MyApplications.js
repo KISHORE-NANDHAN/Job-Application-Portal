@@ -1,108 +1,104 @@
-import { Component, Fragment } from "react";
+import { useState, useEffect } from "react";
 import ls from "local-storage";
 import axios from "axios";
-import "bootstrap/dist/css/bootstrap.min.css";
 import { Rating } from "@material-ui/lab";
 
-class MyApplications extends Component {
-    constructor() {
-        super();
-        this.state = {
-            appList: [],
-        };
-    }
+const MyApplications = () => {
+  const [appList, setAppList] = useState([]);
 
-    componentDidMount() {
-        axios
-            .get("/application", { params: { email: ls.get("email") } })
+  useEffect(() => {
+    axios
+      .get("/application", { params: { email: ls.get("email") } })
+      .then((res) => {
+        let updatedAppList = res.data;
+        updatedAppList.map((app, idx) =>
+          axios
+            .get("/job", {
+              params: { jobid: app.jobid },
+            })
             .then((res) => {
-                let appList = res.data;
-                appList.map((app, idx) =>
-                    axios
-                        .get("/job", {
-                            params: { jobid: app.jobid },
-                        })
-                        .then((res) => {
-                            appList[idx].job = res.data[0];
-                        })
-                        .catch((res) => {
-                            alert(res.response.data.error);
-                        })
-                );
-                setTimeout(() => {
-                    this.setState({ appList });
-                }, 2000);
+              updatedAppList[idx].job = res.data[0];
             })
             .catch((res) => {
-                console.log(res);
-                alert("error");
-            });
-    }
-
-    rateJob = (app) => (e, newValue) => {
-        e.preventDefault();
-        console.log(newValue);
-        axios
-            .post("/application/rate", { appId: app._id, rating: newValue })
-            .then((res) => {
-                window.location.reload();
+              alert(res.response.data.error);
             })
-            .catch((err) => {
-                console.log(err);
-                alert("error");
-                window.location.reload();
-            });
-    };
-
-    render() {
-        return (
-            <Fragment>
-                <h1>My Applications</h1>
-                <br />
-                <table className="table table-hover responsive bordered">
-                    <thead className="thead-dark">
-                        <tr key="head">
-                            <th scope="col">Title</th>
-                            <th scope="col">Recruiter</th>
-                            <th scope="col">Date of posting</th>
-                            <th scope="col">Salary</th>
-                            <th scope="col">Duration</th>
-                            <th scope="col"> Status</th>
-                            <th scope="col"> </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {this.state.appList.map((app, index) => {
-                            return (
-                                <tr key={index}>
-                                    <td>{app.job.title}</td>
-                                    <td>{app.job.recruiterName}</td>
-                                    <td>
-                                        {app.status === "rejected"
-                                            ? "--"
-                                            : new Date(app.job.postingDate).toDateString()}
-                                    </td>
-                                    <td>{app.job.salary}</td>
-                                    <td>{app.job.duration}</td>
-                                    <td>{app.jobDeleted === "yes" ? "job-deleted" : app.status}</td>
-                                    <td>
-                                        {app.status === "accepted" ? (
-                                            <Rating
-                                                value={app.rating}
-                                                onChange={this.rateJob(app)}
-                                            />
-                                        ) : (
-                                            "-"
-                                        )}
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            </Fragment>
         );
-    }
-}
+        setTimeout(() => {
+          setAppList(updatedAppList);
+        }, 2000);
+      })
+      .catch((res) => {
+        console.log(res);
+        alert("error");
+      });
+  }, []);
+
+  const rateJob = (app) => (e, newValue) => {
+    e.preventDefault();
+    console.log(newValue);
+    axios
+      .post("/application/rate", { appId: app._id, rating: newValue })
+      .then(() => {
+        window.location.reload();
+      })
+      .catch((err) => {
+        console.log(err);
+        alert("error");
+        window.location.reload();
+      });
+  };
+
+  return (
+    <div className="container mx-auto my-6">
+      <h1 className="text-2xl font-semibold mb-4">My Applications</h1>
+      <table className="min-w-full table-auto border-collapse">
+        <thead className="bg-gray-800 text-white">
+          <tr>
+            <th className="px-4 py-2">Title</th>
+            <th className="px-4 py-2">Recruiter</th>
+            <th className="px-4 py-2">Date of posting</th>
+            <th className="px-4 py-2">Salary</th>
+            <th className="px-4 py-2">Duration</th>
+            <th className="px-4 py-2">Status</th>
+            <th className="px-4 py-2"> </th>
+          </tr>
+        </thead>
+        <tbody>
+          {appList.map((app, index) => {
+            const job = app.job || {};  // Ensure job is always defined
+            return (
+              <tr
+                key={index}
+                className={`border-t ${app.jobDeleted === "yes" ? "bg-red-100" : ""}`}
+              >
+                <td className="px-4 py-2">{job.title || "No Title"}</td>
+                <td className="px-4 py-2">{job.recruiterName || "No Recruiter"}</td>
+                <td className="px-4 py-2">
+                  {app.status === "rejected" ? "--" : new Date(job.postingDate).toDateString()}
+                </td>
+                <td className="px-4 py-2">{job.salary || "N/A"}</td>
+                <td className="px-4 py-2">{job.duration || "N/A"}</td>
+                <td className="px-4 py-2">
+                  {app.jobDeleted === "yes" ? "Job Deleted" : app.status}
+                </td>
+                <td className="px-4 py-2">
+                  {app.status === "accepted" ? (
+                    <Rating
+                      value={app.rating}
+                      onChange={rateJob(app)}
+                      className="text-yellow-500"
+                    />
+                  ) : (
+                    "-"
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+};
 
 export default MyApplications;

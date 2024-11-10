@@ -72,11 +72,12 @@ router.post("/create", (req, res) => {
                 duration: req.body.duration,
                 salary: req.body.salary,
                 rating: req.body.rating,
+                jobImg : req.body.imageUrl
             });
             newjob
                 .save()
                 .then((data) => {
-                    res.send("ok");
+                    res.send("ok Job Created");
                 })
                 .catch(errorSend(res, "error in saving job"));
         })

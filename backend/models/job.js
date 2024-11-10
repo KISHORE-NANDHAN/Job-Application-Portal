@@ -70,6 +70,11 @@ const jobSchema = new Schema({
         type: String,
         default: "no",
     },
+    jobImg: {
+        type:String,
+        required:true,
+        default: "https://firebasestorage.googleapis.com/v0/b/infiniteconnect-19162.appspot.com/o/job-portal%2FjobApply.jpg?alt=media&token=52b5fcd1-4201-4538-b2af-bf3ff8338539"
+    }
 });
 
 jobSchema.plugin(mongoose_fuzzy_searching, {

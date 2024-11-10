@@ -64,7 +64,11 @@ const userSchema = new mongoose.Schema({
         required: false,
         default: {},
     },
-    /////////////////
+    PFP : {
+        type: String,
+        required : true,
+        default : "https://firebasestorage.googleapis.com/v0/b/infiniteconnect-19162.appspot.com/o/job-portal%2FdefaultPFP.png?alt=media&token=fe096863-919b-46fd-a0e0-05c63a48b556"
+    }
 });
 
 module.exports = User = mongoose.model("user", userSchema);
