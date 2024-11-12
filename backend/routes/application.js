@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const StatusCodes = require("http-status-codes").StatusCodes;
-
+const sendEmail = require('../misc/mailer');
 const Job = require("../models/job");
 const User = require("../models/user");
 const Application = require("../models/application");
@@ -124,122 +124,146 @@ router.post("/apply", (req, res) => {
  */
 router.post("/shortlist", (req, res) => {
     const appId = req.body.appId;
+
     Application.findById(appId)
         .then((application) => {
             if (!application) {
-                return errorSend(res, "application doesn't exists", StatusCodes.BAD_REQUEST)("");
+                return errorSend(res, "Application doesn't exist", StatusCodes.BAD_REQUEST)("");
             }
-            application.status = "shortlisted";
-            application
-                .save()
-                .then((data) => {
-                    res.send("ok");
+            
+            Job.findById(application.jobid) // Fetch job to access the title
+                .then((job) => {
+                    if (!job) {
+                        return errorSend(res, "Job not found", StatusCodes.BAD_REQUEST)("");
+                    }
+                    
+                    application.status = "shortlisted";
+                    application.save()
+                        .then(() => {
+                            User.findById(application.applicant)
+                                .then((user) => {
+                                    const subject = `Your application for ${job.title} has been shortlisted`;
+                                    const text = `Dear ${user.name},\n\nCongratulations 🥳🥳🥳🥳! Your application for ${job.title} has been shortlisted. We will contact you with further details soon.\n\nBest regards,\nThe Team`;
+                                    const html = `<p>Dear ${user.name},</p><p>Congratulations 🥳🥳🥳🥳! Your application for ${job.title} has been shortlisted. We will contact you with further details soon.</p><p>Best regards,<br>The Team</p>`;
+
+                                    sendEmail(user.email, subject, text, html);
+                                    res.send("Application shortlisted and email sent");
+                                })
+                                .catch((err) => {
+                                    console.log("Error finding user:", err);
+                                    errorSend(res, "Error finding user", StatusCodes.INTERNAL_SERVER_ERROR)(err);
+                                });
+                        })
+                        .catch((err) => errorSend(res, "Error in saving application", StatusCodes.INTERNAL_SERVER_ERROR)(err));
                 })
-                .catch(errorSend(res, "error in saving application"));
+                .catch((err) => errorSend(res, "Error in finding job", StatusCodes.INTERNAL_SERVER_ERROR)(err));
         })
-        .catch(errorSend(res, "error in finding application"));
+        .catch((err) => errorSend(res, "Error in finding application", StatusCodes.INTERNAL_SERVER_ERROR)(err));
 });
 
-/**
- * @route POST /application/accept
- * @desc recruiter accepts the job
- * @access PUBLIC
- */
+// Accept Route
 router.post("/accept", (req, res) => {
     const appId = req.body.appId;
 
     Application.findById(appId)
         .then((application) => {
             if (!application) {
-                return errorSend(res, "application not found", StatusCodes.BAD_REQUEST)("");
+                return errorSend(res, "Application not found", StatusCodes.BAD_REQUEST)("");
             }
+
             Job.findById(application.jobid)
                 .then((job) => {
-                    if (job.maxPositions <= 0) {
-                        return errorSend(res, "no more posts left", StatusCodes.BAD_REQUEST)("");
+                    if (!job) {
+                        return errorSend(res, "Job not found", StatusCodes.BAD_REQUEST)("");
                     }
+                    
+                    if (job.maxPositions <= 0) {
+                        return errorSend(res, "No more positions left", StatusCodes.BAD_REQUEST)("");
+                    }
+
                     User.findById(application.applicant)
                         .then((user) => {
                             application.status = "accepted";
                             job.maxPositions -= 1;
+
                             if (job.maxPositions === 0) {
                                 job.removed = "yes";
-                                rejectRemaining(job);
+                                rejectRemaining(job); // Assuming this function is defined
                             }
+
                             user.accepted = "yes";
                             user.applyCnt = 0;
                             user.bossEmail = job.recruiterEmail;
                             user.jobId = job._id;
+
                             Application.find({ applicant: user._id, _id: { $ne: application._id } })
                                 .then((data) => {
                                     for (const iApp of data) {
-                                        if (iApp._id != application._id) {
-                                            iApp.status = "rejected";
-                                            iApp.save().then().catch(console.log);
-                                        }
+                                        iApp.status = "rejected";
+                                        iApp.save().catch(console.log);
                                     }
                                 })
                                 .catch(console.log);
-                            job.save().then().catch(console.log);
-                            user.save().then().catch(console.log);
 
-                            application
-                                .save()
-                                .then((data) => {
-                                    res.send("ok");
+                            job.save().catch(console.log);
+                            user.save().catch(console.log);
+
+                            application.save()
+                                .then(() => {
+                                    const subject = `Congratulations! Your application for ${job.title} has been accepted`;
+                                    const text = `Dear ${user.name},\n\nCongratulations 🥳🥳🥳🥳! You have been accepted for the position at ${job.title}. We will contact you soon with the next steps.\n\nBest regards,\nThe Team`;
+                                    const html = `<p>Dear ${user.name},</p><p>Congratulations 🥳🥳🥳🥳! You have been accepted for the position at ${job.title}. We will contact you soon with the next steps.</p><p>Best regards,<br>The Team</p>`;
+
+                                    sendEmail(user.email, subject, text, html);
+                                    res.send("Accepted and email sent");
                                 })
-                                .catch(errorSend(res, "error in saving application"));
+                                .catch(errorSend(res, "Error in saving application", StatusCodes.INTERNAL_SERVER_ERROR));
                         })
-                        .catch(errorSend(res, "err in finding user"));
+                        .catch(errorSend(res, "Error in finding user", StatusCodes.INTERNAL_SERVER_ERROR));
                 })
-                .catch(errorSend(res, "error in job search"));
+                .catch(errorSend(res, "Error in finding job", StatusCodes.INTERNAL_SERVER_ERROR));
         })
-        .catch(errorSend(res, "error in finding application"));
+        .catch(errorSend(res, "Error in finding application", StatusCodes.INTERNAL_SERVER_ERROR));
 });
 
-/**
- * @route POST /application/reject
- * @desc recruiter rejects the job
- * @access PUBLIC
- */
+// Reject Route
 router.post("/reject", (req, res) => {
     const appId = req.body.appId;
+
     Application.findById(appId)
         .then((application) => {
             if (!application) {
-                return errorSend(res, "application does not exists", StatusCodes.BAD_REQUEST)("");
+                return errorSend(res, "Application not found", StatusCodes.BAD_REQUEST)("");
             }
+
             Job.findById(application.jobid)
                 .then((job) => {
-                    User.findById(application.applicant)
-                        .then((user) => {
-                            if (application.status === "rejected") {
-                                return res.send("already rejected");
-                            }
-                            application.status = "rejected";
-                            if (user.accepted === "yes" && user.jobId === job._id) {
-                                user.accepted = "no";
-                                user.bossEmail = "";
-                                user.jobId = null;
-                                job.maxPositions += 1;
-                            } else {
-                                user.applyCnt -= 1;
-                            }
-                            job.save().then().catch(errorSend(res, "error in saving job"));
-                            user.save().then().catch(errorSend(res, "error in saving user"));
+                    if (!job) {
+                        return errorSend(res, "Job not found", StatusCodes.BAD_REQUEST)("");
+                    }
 
-                            application
-                                .save()
-                                .then((data) => {
-                                    res.send("ok");
+                    application.status = "rejected";
+                    application.save()
+                        .then(() => {
+                            User.findById(application.applicant)
+                                .then((user) => {
+                                    const subject = `Your application for ${job.title} has been rejected`;
+                                    const text = `Dear ${user.name},\n\nWe regret to inform you that your application for ${job.title} has been rejected 😥😣😓😔. We encourage you to apply for other positions in the future.\n\nBest regards,\nThe Team`;
+                                    const html = `<p>Dear ${user.name},</p><p>We regret to inform you that your application for ${job.title} has been rejected 😥😣😓😔. We encourage you to apply for other positions in the future.</p><p>Best regards,<br>The Team</p>`;
+
+                                    sendEmail(user.email, subject, text, html);
+                                    res.send("Application rejected and email sent");
                                 })
-                                .catch(errorSend(res, "error in saving application"));
+                                .catch((err) => {
+                                    console.log("Error finding user:", err);
+                                    errorSend(res, "Error finding user", StatusCodes.INTERNAL_SERVER_ERROR)(err);
+                                });
                         })
-                        .catch(errorSend(res, "error in finding user"));
+                        .catch((err) => errorSend(res, "Error in saving application", StatusCodes.INTERNAL_SERVER_ERROR)(err));
                 })
-                .catch(errorSend(res, "error in finding job"));
+                .catch((err) => errorSend(res, "Error in finding job", StatusCodes.INTERNAL_SERVER_ERROR)(err));
         })
-        .catch(errorSend(res, "error in finding application"));
+        .catch((err) => errorSend(res, "Error in finding application", StatusCodes.INTERNAL_SERVER_ERROR)(err));
 });
 
 /**

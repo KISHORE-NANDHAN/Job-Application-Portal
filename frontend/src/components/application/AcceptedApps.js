@@ -1,33 +1,31 @@
-import { Component, Fragment } from "react";
+import { useState, useEffect } from "react";
 import ls from "local-storage";
 import axios from "axios";
 import { Rating } from "@material-ui/lab";
 
-class AcceptedApps extends Component {
-    constructor() {
-        super();
-        this.state = { list: [] };
-    }
+const AcceptedApps = () => {
+    const [list, setList] = useState([]);
 
-    componentDidMount() {
+    useEffect(() => {
         axios
             .get("/application/accepted", {
                 params: { email: ls.get("email") },
             })
             .then((res) => {
-                this.setState({ list: res.data });
+                setList(res.data);
             })
             .catch((res) => {
                 console.log(res);
                 alert("error");
             });
-    }
+    }, []);
 
-    configureSection = () => {
+    const configureSection = () => {
         const sortBy = (cmp) => (e) => {
             e.preventDefault();
-            this.setState({ list: this.state.list.sort(cmp) });
+            setList((prevList) => [...prevList].sort(cmp));
         };
+
         return (
             <div className="flex flex-wrap justify-center space-x-2 my-4">
                 <button
@@ -82,7 +80,7 @@ class AcceptedApps extends Component {
         );
     };
 
-    rateUser = (userEmail) => (e, newValue) => {
+    const rateUser = (userEmail) => (e, newValue) => {
         axios
             .post("/user/rate", { recEmail: ls.get("email"), userEmail, rating: newValue })
             .then((res) => {
@@ -95,14 +93,13 @@ class AcceptedApps extends Component {
             });
     };
 
-    createCard = (user, job) => {
+    const createCard = (user, job) => {
         const getCurrRating = () => {
             return user.ratersList ? user.ratersList[ls.get("email")] : 0;
         };
+
         return (
-            <div
-                className="bg-gray-100 border border-black rounded-lg p-4 mt-6 mx-auto w-1/2"
-            >
+            <div className="bg-gray-100 border border-black rounded-lg p-4 mt-6 mx-auto w-11/12 md:w-1/2">
                 <div className="w-3/4 mx-auto">
                     <b>Name: </b> {user.name} <br />
                     <b>Date of joining: </b>
@@ -113,7 +110,7 @@ class AcceptedApps extends Component {
                     <br />
                     <div className="flex items-center">
                         <b className="mr-2">Rate applicant: </b>
-                        <Rating value={getCurrRating(user)} onChange={this.rateUser(user.email)} />
+                        <Rating value={getCurrRating(user)} onChange={rateUser(user.email)} />
                     </div>
                     <br />
                 </div>
@@ -121,17 +118,19 @@ class AcceptedApps extends Component {
         );
     };
 
-    render() {
-        return (
-            <Fragment>
-                <h1 className="text-2xl font-bold text-center my-6">Your Accepted Applicants</h1>
-                <div className="flex justify-center">{this.configureSection()}</div>
-                <div className="container mx-auto">
-                    {this.state.list.map((item) => this.createCard(item.user, item.job))}
-                </div>
-            </Fragment>
-        );
-    }
-}
+    return (
+        <>
+            <h1 className="text-2xl font-bold text-center my-6">Your Accepted Applicants</h1>
+            <div className="flex justify-center">{configureSection()}</div>
+            <div className="container mx-auto">
+                {list.length === 0 ? (
+                    <p className="text-center text-lg text-gray-500">No Accepted Applicants</p>
+                ) : (
+                    list.map((item) => createCard(item.user, item.job))
+                )}
+            </div>
+        </>
+    );
+};
 
 export default AcceptedApps;
