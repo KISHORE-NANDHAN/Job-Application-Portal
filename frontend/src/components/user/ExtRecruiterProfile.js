@@ -1,43 +1,42 @@
-import React, { Fragment } from "react";
+import React from "react";
 
-class ExtRecruiterProfile extends React.Component {
-  onChange = (e) => {
-    this.props.parOnChange(e.target.id, e.target.value);
+const ExtRecruiterProfile = ({ user, parOnChange }) => {
+  const onChange = (e) => {
+    parOnChange(e.target.id, e.target.value);
   };
 
-  render() {
-    return (
-      <Fragment>
-        <div className="form-group mb-4">
-          <label>
-            Bio <small>(max 250 chars.):</small>
-          </label>
-          <textarea
-            required
-            id="bio"
-            value={this.props.user.bio}
-            maxLength="250"
-            className="form-control mt-2 p-2 border rounded-md w-full"
-            onChange={this.onChange}
-          />
-        </div>
-        <div className="form-group mb-4">
-          <label>
-            Contact <small>(10 digit phone no.):</small>
-          </label>
-          <input
-            id="contact"
-            value={this.props.user.contact}
-            required
-            type="tel"
-            pattern="(5|6|7|8|9)\d{9}"
-            className="form-control mt-2 p-2 border rounded-md w-full"
-            onChange={this.onChange}
-          />
-        </div>
-      </Fragment>
-    );
-  }
-}
+  return (
+    <div>
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700">
+          Bio <small>(max 250 chars.):</small>
+        </label>
+        <textarea
+          required
+          id="bio"
+          value={user.bio}
+          maxLength="250"
+          className="mt-2 p-2 border rounded-md w-full"
+          onChange={onChange}
+        />
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700">
+          Contact <small>(10 digit phone no.):</small>
+        </label>
+        <input
+          id="contact"
+          value={user.contact}
+          required
+          type="tel"
+          pattern="(5|6|7|8|9)\d{9}"
+          className="mt-2 p-2 border rounded-md w-full"
+          onChange={onChange}
+        />
+      </div>
+    </div>
+  );
+};
 
 export default ExtRecruiterProfile;

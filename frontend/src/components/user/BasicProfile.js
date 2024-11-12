@@ -1,56 +1,58 @@
-import React, { Component, Fragment } from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
+import React, { Fragment } from "react";
 
-class BasicProfile extends Component {
-    onChange = (e) => {
-        this.props.parOnChange(e.target.id, e.target.value);
+const BasicProfile = ({ parOnChange, user, hideEmail, hidePassword }) => {
+    const onChange = (e) => {
+        parOnChange(e.target.id, e.target.value);
     };
-    render() {
-        return (
-            <Fragment>
-                <div className="form-group">
-                    <label>Name: </label>
+
+    return (
+        <Fragment>
+            <div className="mb-4">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                    Name:
+                </label>
+                <input
+                    required
+                    id="name"
+                    type="text"
+                    className="mt-2 p-2 border rounded-md w-full"
+                    onChange={onChange}
+                    value={user.name}
+                />
+            </div>
+
+            {!hideEmail && (
+                <div className="mb-4">
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                        Email:
+                    </label>
                     <input
                         required
-                        id="name"
-                        type="text"
-                        className="form-control"
-                        onChange={this.onChange}
-                        value={this.props.user.name}
+                        id="email"
+                        type="email"
+                        className="mt-2 p-2 border rounded-md w-full"
+                        onChange={onChange}
+                        value={user.email}
                     />
                 </div>
-                {this.props.hideEmail ? (
-                    <Fragment></Fragment>
-                ) : (
-                    <div className="form-group">
-                        <label>Email: </label>
-                        <input
-                            required
-                            id="email"
-                            type="email"
-                            className="form-control"
-                            onChange={this.onChange}
-                            value={this.props.email}
-                        />
-                    </div>
-                )}
-                {this.props.hidePassword ? (
-                    <Fragment></Fragment>
-                ) : (
-                    <div className="form-group">
-                        <label>Password: </label>
-                        <input
-                            id="password"
-                            type="password"
-                            className="form-control"
-                            onChange={this.onChange}
-                            value={this.props.user.password}
-                        />
-                    </div>
-                )}
-            </Fragment>
-        );
-    }
-}
+            )}
+
+            {!hidePassword && (
+                <div className="mb-4">
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                        Password:
+                    </label>
+                    <input
+                        id="password"
+                        type="password"
+                        className="mt-2 p-2 border rounded-md w-full"
+                        onChange={onChange}
+                        value={user.password}
+                    />
+                </div>
+            )}
+        </Fragment>
+    );
+};
 
 export default BasicProfile;
