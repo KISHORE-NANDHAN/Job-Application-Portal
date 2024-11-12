@@ -58,58 +58,63 @@ router.get("/ofjob", (req, res) => {
  * @access PUBLIC
  */
 router.post("/apply", (req, res) => {
-    const query = { _id: req.body.jobid };
-    const appEmail = req.body.email;
-    const bio = req.body.bio;
+    const { jobid, email, bio, resumeUrl } = req.body;
+    const query = { _id: jobid };
+    
     Job.findOne(query)
         .then((job) => {
             if (!job) {
-                return errorSend(res, "job does not exists", StatusCodes.BAD_REQUEST)("");
+                return errorSend(res, "Job does not exist", StatusCodes.BAD_REQUEST)("");
             } else if (job.removed === "yes") {
-                return errorSend(res, "job removed", StatusCodes.BAD_REQUEST)("");
-            } else if (job["appliedCnt"] >= job["maxApplicant"]) {
-                return errorSend(res, "job max applications reached", StatusCodes.BAD_REQUEST)("");
+                return errorSend(res, "Job removed", StatusCodes.BAD_REQUEST)("");
+            } else if (job.appliedCnt >= job.maxApplicant) {
+                return errorSend(res, "Job max applications reached", StatusCodes.BAD_REQUEST)("");
             } else if (new Date(job.deadline).getTime() < new Date().getTime()) {
-                return errorSend(res, "job deadline over", StatusCodes.BAD_REQUEST)("");
+                return errorSend(res, "Job deadline over", StatusCodes.BAD_REQUEST)("");
             } else {
-                User.findOne({ email: appEmail })
+                // Find the user based on the email
+                User.findOne({ email })
                     .then((user) => {
                         if (!user) {
-                            return errorSend(
-                                res,
-                                "user doesn't exist",
-                                StatusCodes.BAD_REQUEST
-                            )("");
+                            return errorSend(res, "User doesn't exist", StatusCodes.BAD_REQUEST)("");
                         } else if (user.applyCnt >= 10) {
-                            return errorSend(
-                                res,
-                                "user can not apply more",
-                                StatusCodes.BAD_REQUEST
-                            )("");
+                            return errorSend(res, "User cannot apply more", StatusCodes.BAD_REQUEST)("");
                         }
-                        //every case covered (hope so)
+
+                        // Increment apply count for the user and job
                         user.applyCnt += 1;
                         job.appliedCnt += 1;
+
+                        // Create new application
                         const newApplication = new Application({
                             jobid: job._id,
                             applicant: user._id,
-                            bio: bio,
-                            dop: new Date(),
+                            bio,
+                            resumeUrl,
+                            dop: new Date(), // Date of application
                         });
 
-                        job.save().then().catch(console.log);
-                        user.save().then().catch(console.log);
-                        newApplication
-                            .save()
-                            .then((data) => {
-                                res.send("ok");
+                        // Save changes to the job, user, and application
+                        Promise.all([
+                            job.save(),
+                            user.save(),
+                            newApplication.save()
+                        ])
+                            .then(() => {
+                                res.send("Application submitted successfully!");
                             })
-                            .catch(errorSend(res, "error in saving application"));
+                            .catch((err) => {
+                                errorSend(res, "Error saving application or updating job/user", StatusCodes.INTERNAL_SERVER_ERROR)(err);
+                            });
                     })
-                    .catch(errorSend(res, "error in finding user"));
+                    .catch((err) => {
+                        errorSend(res, "Error in finding user", StatusCodes.BAD_REQUEST)(err);
+                    });
             }
         })
-        .catch(errorSend(res, "error in finding job"));
+        .catch((err) => {
+            errorSend(res, "Error in finding job", StatusCodes.BAD_REQUEST)(err);
+        });
 });
 
 /**

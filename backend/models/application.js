@@ -33,6 +33,10 @@ const appnSchema = new Schema({
         type: String,
         default: "no",
     },
+    resumeUrl :{
+        type:String,
+        required:true
+    }
 });
 
 module.exports = Application = mongoose.model("application", appnSchema);

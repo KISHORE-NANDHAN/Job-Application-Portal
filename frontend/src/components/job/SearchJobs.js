@@ -1,32 +1,28 @@
-import { Component } from "react";
+import { useState, useEffect } from "react";
 import ls from "local-storage";
 import axios from "axios";
-import "bootstrap/dist/css/bootstrap.min.css";
 
-class SearchJobs extends Component {
-    constructor() {
-        super();
-        this.state = {
-            key: "",
-            orgJobs: [],
-            showJobs: [],
-            filters: {
-                type: "Any",
-                salaryMin: -Infinity,
-                salaryMax: +Infinity,
-                duration: 7,
-                sortby: "",
-                reverse: false,
-            },
-        };
-    }
+const SearchJobs = () => {
+    const [key, setKey] = useState("");
+    const [orgJobs, setOrgJobs] = useState([]);
+    const [showJobs, setShowJobs] = useState([]);
+    const [filters, setFilters] = useState({
+        type: "Any",
+        salaryMin: -Infinity,
+        salaryMax: +Infinity,
+        duration: 7,
+        sortBy: "",
+        reverse: false,
+    });
 
-    applyFilters = (filters) => {
+    // Apply filters to jobs list
+    const applyFilters = (filters) => {
         if (filters.salaryMax === "") {
             filters.salaryMax = Infinity;
         }
-        this.setState({ filters });
-        let jobList = this.state.orgJobs;
+        setFilters(filters);
+        let jobList = orgJobs;
+
         if (filters.type !== "Any") {
             jobList = jobList.filter((item) => item.type === filters.type);
         }
@@ -42,114 +38,115 @@ class SearchJobs extends Component {
                 (a, b) => (filters.reverse ? -1 : 1) * (a[filters.sortBy] - b[filters.sortBy])
             );
         }
-        this.setState({ showJobs: jobList });
+        setShowJobs(jobList);
     };
 
-    createApplyButton = (job, index) => {
+    // Create Apply button
+    const createApplyButton = (job, index) => {
         if (job.applied === "yes") {
             return (
-                <button className="btn btn-sm btn-primary" disabled>
+                <button className="btn btn-sm bg-blue-500 text-white" disabled>
                     Applied
                 </button>
             );
         } else if (job.appliedCnt >= job.maxApplicant) {
             return (
-                <button className="btn btn-sm btn-warning" disabled>
+                <button className="btn btn-sm bg-yellow-500 text-white" disabled>
                     Full
                 </button>
             );
         } else {
             return (
-                <button className="btn btn-sm btn-primary" onClick={this.applyJob(index)}>
+                <button
+                    className="btn btn-sm bg-blue-500 text-white"
+                    onClick={() => applyJob(index)}
+                >
                     Apply
                 </button>
             );
         }
     };
 
-    sortJobsfunc = (key, reverse = false) => (e) => {
-        e.preventDefault();
-        const filters = { ...this.state.filters, sortBy: key, reverse };
-        this.applyFilters(filters);
+    // Sorting functionality
+    const sortJobsFunc = (key, reverse = false) => () => {
+        const updatedFilters = { ...filters, sortBy: key, reverse };
+        applyFilters(updatedFilters);
     };
 
-    configureSection = () => {
+    // Handle filter changes
+    const handleChange = (e) => {
+        const { id, value } = e.target;
+        const updatedFilters = { ...filters, [id]: value };
+        applyFilters(updatedFilters);
+    };
+
+    // Configure filter section
+    const configureSection = () => {
         const sortBtn = (msg, func) => (
-            <button style={{ margin: "2px" }} className="btn btn-sm btn-info col" onClick={func}>
+            <button
+                style={{ margin: "2px" }}
+                className="btn btn-sm bg-blue-500 text-white"
+                onClick={func}
+            >
                 {msg}
             </button>
         );
-        const onChange = (e) => {
-            e.preventDefault();
-            const filters = { ...this.state.filters, [e.target.id]: e.target.value };
-            this.applyFilters(filters);
-        };
+
         return (
-            <div style={{ width: "90%", margin: "auto" }}>
-                <div className="row">
-                    {sortBtn("Sort by Salary", this.sortJobsfunc("salary"))}
-                    {sortBtn("Sort by Salary(rev)", this.sortJobsfunc("salary", true))}
-                    {sortBtn("Sort by Rating", this.sortJobsfunc("rating"))}
-                    {sortBtn("Sort by Rating(rev)", this.sortJobsfunc("rating", true))}
-                    {sortBtn("Sort by Duration", this.sortJobsfunc("duration"))}
-                    {sortBtn("Sort by Duration(rev)", this.sortJobsfunc("duration", true))}
+            <div className="w-4/5 mx-auto">
+                <div className="flex flex-wrap">
+                    {sortBtn("Sort by Salary", sortJobsFunc("salary"))}
+                    {sortBtn("Sort by Salary(rev)", sortJobsFunc("salary", true))}
+                    {sortBtn("Sort by Rating", sortJobsFunc("rating"))}
+                    {sortBtn("Sort by Rating(rev)", sortJobsFunc("rating", true))}
+                    {sortBtn("Sort by Duration", sortJobsFunc("duration"))}
+                    {sortBtn("Sort by Duration(rev)", sortJobsFunc("duration", true))}
                 </div>
-                <div className="row">
-                    <div className="dropdown col">
+                <div className="flex flex-wrap mt-4">
+                    <div className="w-1/4 p-2">
                         <label>Type:</label>
-                        <select style={{ marginLeft: "5px" }} id="type" onChange={onChange}>
-                            <option className="dropdown-item" value="Any">
-                                Any
-                            </option>
-                            <option className="dropdown-item" value="Work From Home">
-                                Work From Home
-                            </option>
-                            <option className="dropdown-item" value="Part Time">
-                                Part Time
-                            </option>
-                            <option className="dropdown-item" value="Full Time">
-                                Full Time
-                            </option>
+                        <select id="type" onChange={handleChange} className="form-select">
+                            <option value="Any">Any</option>
+                            <option value="Work From Home">Work From Home</option>
+                            <option value="Part Time">Part Time</option>
+                            <option value="Full Time">Full Time</option>
                         </select>
                     </div>
-                    <div className="col">
+                    <div className="w-1/4 p-2">
                         <label>Salary min:</label>
-                        <input id="salaryMin" type="number" min="0" step="1" onChange={onChange} />
+                        <input
+                            id="salaryMin"
+                            type="number"
+                            min="0"
+                            step="1"
+                            onChange={handleChange}
+                            className="form-input"
+                        />
                     </div>
-                    <div className="col">
+                    <div className="w-1/4 p-2">
                         <label>Salary max:</label>
-                        <input id="salaryMax" type="number" min="0" step="1" onChange={onChange} />
+                        <input
+                            id="salaryMax"
+                            type="number"
+                            min="0"
+                            step="1"
+                            onChange={handleChange}
+                            className="form-input"
+                        />
                     </div>
-                    <div className="dropdown col">
+                    <div className="w-1/4 p-2">
                         <label>Duration less than:</label>
-                        <br />
                         <select
-                            itemType="number"
-                            defaultValue="7"
                             id="duration"
-                            onChange={onChange}
+                            defaultValue="7"
+                            onChange={handleChange}
+                            className="form-select"
                         >
-                            <option className="dropdown-item" value="1">
-                                1
-                            </option>
-                            <option className="dropdown-item" value="2">
-                                2
-                            </option>
-                            <option className="dropdown-item" value="3">
-                                3
-                            </option>
-                            <option className="dropdown-item" value="4">
-                                4
-                            </option>
-                            <option className="dropdown-item" value="5">
-                                5
-                            </option>
-                            <option className="dropdown-item" value="6">
-                                6
-                            </option>
-                            <option className="dropdown-item" value="7">
-                                7
-                            </option>
+                            {[1, 2, 3, 4, 5, 6, 7].map((num) => (
+                                <option key={num} value={num}>
+                                    {num}
+                                </option>
+                            ))}
                         </select>
                     </div>
                 </div>
@@ -157,120 +154,113 @@ class SearchJobs extends Component {
         );
     };
 
-    componentDidMount() {
-        this.updateJobs();
-    }
-
-    updateJobs = () => {
+    // Fetch jobs from API
+    const updateJobs = () => {
         axios
-            .get("/job/search", {
-                params: { key: this.state.key },
-            })
+            .get("/job/search", { params: { key } })
             .then((res) => {
-                let jobList = res.data.filter((job) => new Date() < new Date(job.deadline));
+                const jobList = res.data.filter((job) => new Date() < new Date(job.deadline));
                 axios
                     .get("/application", { params: { email: ls.get("email") } })
                     .then((res) => {
                         const myAppList = res.data;
-                        for (const job of jobList) {
-                            let tmp = myAppList.filter((app) => app.jobid === job._id);
-                            if (tmp.length > 0) job.applied = "yes";
-                            else job.applied = "no";
-                        }
-                        this.setState({ orgJobs: jobList });
-                        this.setState({ showJobs: jobList });
+                        jobList.forEach((job) => {
+                            const appliedJob = myAppList.filter((app) => app.jobid === job._id);
+                            job.applied = appliedJob.length > 0 ? "yes" : "no";
+                        });
+                        setOrgJobs(jobList);
+                        setShowJobs(jobList);
                     })
-                    .catch((err) => {
-                        console.log(err);
-                        alert("error");
-                    });
+                    .catch((err) => alert("Error: " + err));
             })
-            .catch((res) => {
-                alert(res.response.data.error);
-            });
+            .catch((err) => alert("Error: " + err));
     };
 
-    applyJob = (index) => (e) => {
-        e.preventDefault();
-        let url = new URLSearchParams({
-            jobid: this.state.showJobs[index]._id,
+    // Apply job
+    const applyJob = (index) => {
+        const url = new URLSearchParams({
+            jobid: showJobs[index]._id,
         });
-        url = "/jobapply/?" + url.toString();
-        window.location = url;
+        window.location = "/jobapply/?" + url.toString();
     };
 
-    render() {
-        return (
-            <div className="container">
-                <h1>Search Jobs</h1>
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        this.updateJobs();
-                    }}
-                >
-                    <div className="form-group">
-                        <label>Search by title: </label>
-                        <input
-                            style={{ width: "80%", marginLeft: "4px", display: "inline" }}
-                            id="key"
-                            type="text"
-                            className="form-control"
-                            onChange={(e) => {
-                                e.preventDefault();
-                                this.setState({ key: e.target.value });
-                            }}
-                        />
-                        <button
-                            className="btn btn-sm btn-outline alert-secondary"
-                            style={{ marginLeft: "4px" }}
-                            onClick={(e) => {
-                                e.preventDefault();
-                                this.updateJobs();
-                            }}
-                        >
-                            Go
-                        </button>
-                    </div>
-                </form>
+    // Run on mount
+    useEffect(() => {
+        updateJobs();
+    }, []);
 
-                {this.configureSection()}
-
-                <div className="container" style={{ marginTop: "20px" }}>
-                    <table className="table table-hover responsive bordered">
-                        <thead className="thead-dark">
-                            <tr key="head">
-                                <th scope="col">Title</th>
-                                <th scope="col">Recruiter</th>
-                                <th scope="col">Rating</th>
-                                <th scope="col">Salary</th>
-                                <th scope="col">Duration</th>
-                                <th scope="col">Deadline</th>
-                                <th scope="col"> </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {this.state.showJobs.map((item, index) => {
-                                return (
-                                    <tr key={index}>
-                                        <td>{item.title}</td>
-                                        <td>{item.recruiterName}</td>
-                                        <td>{item.rating}</td>
-                                        <td>{item.salary}</td>
-                                        <td>{item.duration}</td>
-                                        <td>{new Date(item.deadline).toLocaleString()}</td>
-                                        <td onClick={(e) => console.log(index)}>
-                                            {this.createApplyButton(item, index)}
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+    return (
+        <div className="container mx-auto p-4">
+            <h1 className="text-3xl font-bold mb-4">Search Jobs</h1>
+            <form
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    updateJobs();
+                }}
+                className="mb-4"
+            >
+                <div className="flex items-center">
+                    <label className="mr-2">Search by title: </label>
+                    <input
+                        id="key"
+                        type="text"
+                        className="form-input w-4/5 p-2"
+                        onChange={(e) => setKey(e.target.value)}
+                    />
+                    <button
+                        className="btn bg-gray-200 text-black ml-2"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            updateJobs();
+                        }}
+                    >
+                        Go
+                    </button>
                 </div>
+            </form>
+
+            {configureSection()}
+
+            <div className="mt-4">
+                <table className="min-w-full table-auto border-separate border-spacing-2">
+                    <thead>
+                        <tr>
+                            <th className="p-2 text-left">Image</th>
+                            <th className="p-2 text-left">Title</th>
+                            <th className="p-2 text-left">Recruiter</th>
+                            <th className="p-2 text-left">Rating</th>
+                            <th className="p-2 text-left">Salary</th>
+                            <th className="p-2 text-left">Duration</th>
+                            <th className="p-2 text-left">Deadline</th>
+                            <th className="p-2 text-left"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {showJobs.map((item, index) => (
+                            <tr key={index}>
+                                <td className="p-2">
+                                    <img
+                                        src={item.jobImg}
+                                        alt={item.title}
+                                        className="w-28 h-28 object-cover rounded"
+                                    />
+                                </td>
+                                <td className="p-2">{item.title}</td>
+                                <td className="p-2">{item.recruiterName}</td>
+                                <td className="p-2">{item.rating}</td>
+                                <td className="p-2">{item.salary}</td>
+                                <td className="p-2">{item.duration} days</td>
+                                <td className="p-2">{item.deadline}</td>
+                                <td className="p-2">
+                                    {createApplyButton(item, index)}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
-        );
-    }
-}
+        </div>
+    );
+};
 
 export default SearchJobs;

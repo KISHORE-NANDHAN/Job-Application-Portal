@@ -1,36 +1,44 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import ls from "local-storage";
-import { storage } from "../../firebase"; // Import Firebase storage
+import { storage } from "../../firebase";
+import defaultPic from "../../images/defaultPFP.png";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import Cropper from "react-easy-crop";
 
 const Profile = () => {
     const [user, setUser] = useState({
+        PFP: "",
         name: "",
         email: "",
         password: "",
-        isRecruiter: false,
+        isRecruiter: "no",
         contact: "",
         bio: "",
         ed: [],
         skills: [],
         applyCnt: 0,
-        profilePicUrl: "", 
-        imagePreview: "", 
+        profilePicUrl: "",
+        imagePreview: "",
+        rating: 0,
     });
 
     const [crop, setCrop] = useState({ x: 0, y: 0 });
     const [zoom, setZoom] = useState(1);
-    const [isEditing, setIsEditing] = useState(false); // Track edit mode
+    const [isEditing, setIsEditing] = useState(false);
     const [imageToUpload, setImageToUpload] = useState(null);
+    const [newEducation, setNewEducation] = useState("");
+
+    const allSkills = [
+        "C", "C++", "Python", "Java", "Flutter", "Dart", "Kotlin", "Android Developer", 
+        "React", "NodeJs", "Django", "Machine Learning", "Data Analyst", "Data Scientist", 
+        "Web Developer", "Angular"
+    ];
 
     useEffect(() => {
         axios
             .get("/user/profile", {
-                params: {
-                    email: ls.get("email"),
-                },
+                params: { email: ls.get("email") },
             })
             .then((res) => {
                 setUser(res.data);
@@ -60,59 +68,78 @@ const Profile = () => {
     };
 
     const uploadImageToFirebase = () => {
-        if (!imageToUpload) return;
-
-        const storageRef = ref(storage, `profilePics/${imageToUpload.name}`);
-        const uploadTask = uploadBytesResumable(storageRef, imageToUpload);
-
-        uploadTask.on(
-            "state_changed",
-            (snapshot) => {
-                // Optionally show upload progress here
-            },
-            (error) => {
-                console.log(error);
-                alert("Error uploading image.");
-            },
-            () => {
-                getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-                    setUser((prevUser) => ({
-                        ...prevUser,
-                        profilePicUrl: downloadURL,
-                    }));
-                    alert("Image uploaded successfully.");
-                });
+        return new Promise((resolve, reject) => {
+            if (!imageToUpload) {
+                resolve(user.profilePicUrl);
+                return;
             }
-        );
+
+            const storageRef = ref(storage, `profilePics/${imageToUpload.name}`);
+            const uploadTask = uploadBytesResumable(storageRef, imageToUpload);
+
+            uploadTask.on(
+                "state_changed",
+                () => {},
+                (error) => {
+                    console.error(error);
+                    alert("Error uploading image.");
+                    reject(error);
+                },
+                () => {
+                    getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                        resolve(downloadURL);
+                    });
+                }
+            );
+        });
     };
 
-    const updateUserProfile = () => {
-        // If the profile picture was updated, upload it to Firebase first
-        if (imageToUpload) {
-            uploadImageToFirebase();
-        }
-        console.log(user)
-        // Update user profile data in the backend
-        axios
-            .post("/user/profile", {
+    const updateUserProfile = async () => {
+        try {
+            const profilePicUrl = await uploadImageToFirebase();
+            const updatedUser = { ...user, profilePicUrl };
+            await axios.post("/user/profile", {
                 email: ls.get("email"),
-                user: { ...user },
-            })
-            .then(() => {
-                alert("Profile updated successfully!");
-                setIsEditing(false); // Exit edit mode after save
-            })
-            .catch((error) => {
-                alert(error.response?.data?.error || "Error updating profile");
+                user: updatedUser,
             });
+            alert("Profile updated successfully!");
+            setIsEditing(false);
+        } catch (error) {
+            alert(error.response?.data?.error || "Error updating profile");
+        }
     };
 
     const cancelEdit = () => {
         setIsEditing(false);
-        // Reset image preview if it was changed
         setUser((prevUser) => ({
             ...prevUser,
-            imagePreview: prevUser.profilePicUrl, // reset image preview
+            imagePreview: prevUser.profilePicUrl,
+        }));
+    };
+
+    const handleSkillToggle = (skill) => {
+        setUser((prevUser) => ({
+            ...prevUser,
+            skills: prevUser.skills.includes(skill)
+                ? prevUser.skills.filter((s) => s !== skill)
+                : [...prevUser.skills, skill],
+        }));
+    };
+
+    const addEducation = () => {
+        if (newEducation.trim()) {
+            setUser((prevUser) => ({
+                ...prevUser,
+                ed: [...prevUser.ed, newEducation],
+            }));
+            setNewEducation("");
+        }
+    };
+
+    const removeEducation = (index) => {
+        setUser((prevUser) => ({
+            ...prevUser,
+            ed: prevUser.ed.filter((_, i) => i !== index),
         }));
     };
 
@@ -120,38 +147,63 @@ const Profile = () => {
         <div className="container mx-auto p-6">
             <h1 className="text-3xl font-semibold mb-6">Profile</h1>
 
-            {/* Display Mode */}
             {!isEditing ? (
                 <div>
                     <div className="mb-6 flex items-center">
                         <img
-                            src={user.PFP || "../../images/defaultPFP.png"}
+                            src={user.PFP || defaultPic}
                             alt="Profile"
                             className="w-24 h-24 rounded-full object-cover mr-4"
                         />
                         <div>
                             <h2 className="text-2xl font-semibold">{user.name}</h2>
                             <p className="text-gray-500">{user.email}</p>
-                            {user.isRecruiter ? (
-                                <p className="text-gray-500">{user.bio}</p>
+                            {user.isRecruiter === "yes" ? (
+                                <>
+                                    <p className="text-gray-500">Contact: {user.contact}</p>
+                                    <p className="text-gray-500">Bio: {user.bio}</p>
+                                </>
                             ) : (
-                                <p className="text-gray-500">{user.skills.join(", ")}</p>
+                                <>
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        {user.skills.map((skill, index) => (
+                                            <span
+                                                key={index}
+                                                className="py-1 px-3 rounded-full bg-blue-500 text-white"
+                                            >
+                                                {skill}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <div className="mt-4">
+                                        {user.ed.map((edu, index) => (
+                                            <div key={index} className="block text-gray-700">
+                                                {typeof edu === 'object' ? (
+                                                    <span>{edu.insti} - {edu.startYear} to {edu.endYear}</span>
+                                                ) : (
+                                                    <span>{edu}</span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
                             )}
                         </div>
                     </div>
 
-                    <div className="flex space-x-4">
-                        <button
-                            onClick={() => setIsEditing(true)}
-                            className="px-4 py-2 bg-blue-500 text-white rounded-md"
-                        >
-                            Update Profile
-                        </button>
-                    </div>
+                    {user.isRecruiter === "yes" && (
+                        <div className="text-gray-500">Rating: {user.rating} ⭐</div>
+                    )}
+
+                    <button
+                        onClick={() => setIsEditing(true)}
+                        className="px-4 py-2 bg-blue-500 text-white rounded-md mt-4"
+                    >
+                        Update Profile
+                    </button>
                 </div>
             ) : (
                 <form onSubmit={(e) => e.preventDefault()}>
-                    {/* Editable Inputs */}
                     <div className="mb-6">
                         <label className="block text-lg font-medium">Name:</label>
                         <input
@@ -163,16 +215,15 @@ const Profile = () => {
                     </div>
 
                     <div className="mb-6">
-                        <label className="block text-lg font-medium">Email:</label>
+                        <label className="block text-lg font-medium">Contact:</label>
                         <input
-                            type="email"
-                            value={user.email}
-                            disabled
-                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-100"
+                            type="text"
+                            value={user.contact}
+                            onChange={(e) => handleInputChange("contact", e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded-md"
                         />
                     </div>
 
-                    {/* Profile Picture Section */}
                     <div className="mb-6">
                         <label className="block text-lg font-medium">Profile Picture:</label>
                         <input
@@ -195,8 +246,7 @@ const Profile = () => {
                         )}
                     </div>
 
-                    {/* Recruiter or Applicant Specific Fields */}
-                    {user.isRecruiter ? (
+                    {user.isRecruiter === "yes" ? (
                         <div className="mb-6">
                             <label className="block text-lg font-medium">Bio:</label>
                             <textarea
@@ -206,32 +256,62 @@ const Profile = () => {
                             />
                         </div>
                     ) : (
-                        <div className="mb-6">
-                            <label className="block text-lg font-medium">Skills:</label>
-                            <input
-                                type="text"
-                                value={user.skills.join(", ")}
-                                onChange={(e) => handleInputChange("skills", e.target.value.split(","))}
-                                className="w-full p-2 border border-gray-300 rounded-md"
-                            />
-                        </div>
+                        <>
+                            <div className="mb-6">
+                                <label className="block text-lg font-medium">Education:</label>
+                                {user.ed.map((edu, index) => (
+                                    <div key={edu.id} className="flex items-center gap-2 mb-2">
+                                        <span className="text-gray-700">{edu.name}</span>
+                                        <button
+                                            onClick={() => removeEducation(index)}
+                                            className="text-red-500 hover:text-red-700"
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                ))}
+                                <input
+                                    type="text"
+                                    value={newEducation}
+                                    onChange={(e) => setNewEducation(e.target.value)}
+                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                    placeholder="Add new education"
+                                />
+                                <button
+                                    onClick={addEducation}
+                                    className="mt-2 px-3 py-1 bg-blue-500 text-white rounded-md"
+                                >
+                                    Add
+                                </button>
+                            </div>
+
+                            <div className="mb-6">
+                                <label className="block text-lg font-medium">Skills:</label>
+                                {allSkills.map((skill) => (
+                                    <button
+                                        key={skill}
+                                        onClick={() => handleSkillToggle(skill)}
+                                        className={`py-1 px-3 rounded-md ${user.skills.includes(skill) ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                                    >
+                                        {skill}
+                                    </button>
+                                ))}
+                            </div>
+                        </>
                     )}
 
-                    {/* Buttons for saving or cancelling */}
-                    <div className="flex justify-between">
+                    <div className="mt-4">
                         <button
-                            type="button"
                             onClick={updateUserProfile}
-                            className="px-4 py-2 bg-blue-500 text-white rounded-md"
+                            className="px-4 py-2 bg-green-500 text-white rounded-md"
                         >
                             Save Changes
                         </button>
                         <button
-                            type="button"
                             onClick={cancelEdit}
-                            className="px-4 py-2 bg-gray-500 text-white rounded-md"
+                            className="px-4 py-2 bg-gray-500 text-white rounded-md ml-4"
                         >
-                            Cancel Changes
+                            Cancel
                         </button>
                     </div>
                 </form>

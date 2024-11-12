@@ -9,27 +9,31 @@ const MyApplications = () => {
   useEffect(() => {
     axios
       .get("/application", { params: { email: ls.get("email") } })
-      .then((res) => {
+      .then(async (res) => {
         let updatedAppList = res.data;
-        updatedAppList.map((app, idx) =>
-          axios
-            .get("/job", {
-              params: { jobid: app.jobid },
-            })
-            .then((res) => {
-              updatedAppList[idx].job = res.data[0];
-            })
-            .catch((res) => {
-              alert(res.response.data.error);
-            })
+
+        // Use Promise.all to fetch all job details before updating the state
+        await Promise.all(
+          updatedAppList.map(async (app, idx) => {
+            try {
+              // Check if jobid is valid
+              console.log(app.jobid);  // Log the jobid
+              const jobRes = await axios.get("/job", {
+                params: { jobid: app.jobid }, 
+              });
+              updatedAppList[idx].job = jobRes.data[0];
+            } catch (err) {
+              alert(err.response?.data?.error || "Error fetching job details");
+            }
+          })
         );
-        setTimeout(() => {
-          setAppList(updatedAppList);
-        }, 2000);
+
+        // Now set the state once all the job data has been fetched
+        setAppList(updatedAppList);
       })
-      .catch((res) => {
-        console.log(res);
-        alert("error");
+      .catch((err) => {
+        console.log(err);
+        alert("Error fetching applications");
       });
   }, []);
 
@@ -43,7 +47,7 @@ const MyApplications = () => {
       })
       .catch((err) => {
         console.log(err);
-        alert("error");
+        alert("Error updating rating");
         window.location.reload();
       });
   };
@@ -84,6 +88,7 @@ const MyApplications = () => {
                 <td className="px-4 py-2">
                   {app.status === "accepted" ? (
                     <Rating
+                      name={`rating-${app._id}`}  // Unique name for each rating
                       value={app.rating}
                       onChange={rateJob(app)}
                       className="text-yellow-500"

@@ -1,280 +1,251 @@
-import { Component } from "react";
+import { useState, useEffect } from "react";
 import ls from "local-storage";
 import axios from "axios";
-import "bootstrap/dist/css/bootstrap.min.css";
 
-class JobEdit extends Component {
-    constructor() {
-        super();
-        this.state = {
-            title: "",
-            recruiterEmail: ls.get("email"),
-            maxApplicant: 0,
-            maxPositions: 0,
-            postingDate: new Date(0),
-            deadline: new Date(0),
-            requiredSkills: [],
-            type: "",
-            duration: 0,
-            salary: 0,
-        };
-    }
-    componentDidMount() {
-        const jobid = new URLSearchParams(this.props.location.search).get("jobid");
+const JobEdit = () => {
+    const [job, setJob] = useState({
+        title: "",
+        recruiterEmail: ls.get("email"),
+        maxApplicant: 0,
+        maxPositions: 0,
+        postingDate: new Date(0),
+        deadline: new Date(0),
+        requiredSkills: [],
+        type: "",
+        duration: 0,
+        salary: 0,
+    });
+
+    useEffect(() => {
+        const jobid = new URLSearchParams(window.location.search).get("jobid");
         axios
             .get("/job", {
                 params: { jobid },
             })
             .then((res) => {
-                this.setState(res.data[0]);
+                setJob(res.data[0]);
             })
-            .catch((res) => {
-                alert(res.response.data.error);
+            .catch((error) => {
+                alert(error.response.data.error);
             });
-    }
-    onChange = (type) => (e) => {
+    }, []);
+
+    const onChange = (type) => (e) => {
         e.preventDefault();
-        this.setState({
+        setJob({
+            ...job,
             [e.target.id]: type(e.target.value),
         });
     };
 
-    onSubmit = (e) => {
+    const onSubmit = (e) => {
         e.preventDefault();
         axios
-            .post("/job/edit", { job: this.state })
-            .then((res) => {
-                alert("changes done successfully!");
+            .post("/job/edit", { job })
+            .then(() => {
+                alert("Changes done successfully!");
                 window.location = "/";
             })
-            .catch((res) => {
-                alert(res.response.data.error);
+            .catch((error) => {
+                alert(error.response.data.error);
             });
     };
 
-    render() {
-        return (
-            <div className="container">
-                <h1>Edit Job</h1>
-                <form onSubmit={this.onSubmit}>
-                    <div className="form-group">
-                        <label>Title: </label>
-                        <input
-                            id="title"
-                            required
-                            value={this.state.title}
-                            type="text"
-                            className="form-control"
-                            onChange={this.onChange(String)}
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label>Salary: </label>
-                        <input
-                            id="salary"
-                            value={this.state.salary}
-                            min="0"
-                            step="1"
-                            required
-                            type="number"
-                            className="form-control"
-                            onChange={this.onChange(Number)}
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label>Duration: </label>
-                        <input
-                            id="duration"
-                            value={this.state.duration}
-                            min="0"
-                            max="6"
-                            step="1"
-                            required
-                            type="number"
-                            className="form-control"
-                            onChange={this.onChange(Number)}
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label> Type : </label>
-                        <div className="dropdown">
-                            <select
-                                value={this.state.type}
-                                required
-                                id="type"
-                                onChange={this.onChange(String)}
-                            >
-                                <option className="dropdown-item" value="Work From Home">
-                                    Work From Home
-                                </option>
-                                <option className="dropdown-item" value="Full Time">
-                                    Full Time
-                                </option>
-                                <option className="dropdown-item" value="Part Time">
-                                    Part Time
-                                </option>
-                            </select>
-                        </div>
-                    </div>
-                    <div className="form-group">
-                        <label>Max Number of Applicants: </label>
-                        <input
-                            id="maxApplicant"
-                            value={this.state.maxApplicant}
-                            min="0"
-                            step="1"
-                            required
-                            type="number"
-                            className="form-control"
-                            onChange={this.onChange(Number)}
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label>Max Number of Positions: </label>
-                        <input
-                            id="maxPositions"
-                            value={this.state.maxPositions}
-                            min="0"
-                            step="1"
-                            required
-                            type="number"
-                            className="form-control"
-                            onChange={this.onChange(Number)}
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label>Posting Date: </label>
-                        <input
-                            id="postingDate"
-                            required
-                            value={new Date(this.state.postingDate).toLocaleDateString("en-CA")}
-                            type="date"
-                            className="form-control"
-                            onChange={(e) => {
-                                e.preventDefault();
-                                const val = new Date(e.target.value);
-                                this.setState({ postingDate: val });
-                            }}
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label>Deadline: </label>
-                        <div className="form-group">
-                            <input
-                                required
-                                className="form-control"
-                                value={new Date(this.state.deadline).toLocaleDateString("en-CA")}
-                                type="date"
-                                max="9999-12-12T00:00:00.00"
-                                onChange={(e) => {
-                                    e.preventDefault();
-                                    let deadline = new Date(this.state.deadline);
-                                    const val = new Date(e.target.value);
-                                    deadline.setFullYear(val.getFullYear());
-                                    deadline.setMonth(val.getMonth());
-                                    deadline.setDate(val.getDate());
-                                    this.setState({ deadline: deadline });
-                                }}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <input
-                                required
-                                className="form-control"
-                                type="time"
-                                value={new Date(this.state.deadline).toLocaleTimeString([], {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                    hour12: false,
-                                })}
-                                // value={new Date(this.state.deadline).t.substr(10)}
-                                max="9999-12-12T00:00:00.00"
-                                onChange={(e) => {
-                                    e.preventDefault();
-                                    let deadline = new Date(this.state.deadline);
-                                    const val = new Date(
-                                        deadline.toDateString() + " " + e.target.value
-                                    );
+    return (
+        <div className="container mx-auto p-4">
+            <h1 className="text-3xl font-semibold mb-6">Edit Job</h1>
+            <form onSubmit={onSubmit} className="space-y-4">
+                <div className="space-y-2">
+                    <label htmlFor="title" className="block text-lg">Title:</label>
+                    <input
+                        id="title"
+                        value={job.title}
+                        type="text"
+                        required
+                        className="input w-full border rounded p-2"
+                        onChange={onChange(String)}
+                    />
+                </div>
 
-                                    deadline.setHours(val.getHours());
-                                    deadline.setMinutes(val.getMinutes());
-                                    this.setState({ deadline: deadline });
-                                }}
-                            />
-                        </div>
-                    </div>
-                    <div className="form-group">
-                        <label>Required Skills:</label>
-                        <button
-                            style={{ margin: "4px" }}
-                            onClick={(e) => {
-                                e.preventDefault();
-                                this.setState({
-                                    requiredSkills: [...this.state.requiredSkills, ""],
-                                });
-                            }}
-                        >
-                            Add
-                        </button>
-                        {this.state.requiredSkills.map((item, index) => {
-                            return (
-                                <div>
-                                    <input
-                                        required
-                                        value={item}
-                                        onChange={(e) => {
-                                            e.preventDefault();
-                                            this.setState({
-                                                requiredSkills: this.state.requiredSkills.map(
-                                                    (xitem, xindex) => {
-                                                        return xindex === index
-                                                            ? e.target.value
-                                                            : xitem;
-                                                    }
-                                                ),
-                                            });
-                                        }}
-                                    />
+                <div className="space-y-2">
+                    <label htmlFor="salary" className="block text-lg">Salary:</label>
+                    <input
+                        id="salary"
+                        value={job.salary}
+                        type="number"
+                        required
+                        min="0"
+                        step="1"
+                        className="input w-full border rounded p-2"
+                        onChange={onChange(Number)}
+                    />
+                </div>
 
-                                    <button
-                                        style={{ display: "inline", marginLeft: "5px" }}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            this.setState({
-                                                requiredSkills: this.state.requiredSkills.filter(
-                                                    (xitem, xindex) => xindex !== index
-                                                ),
-                                            });
-                                        }}
-                                    >
-                                        X
-                                    </button>
-                                </div>
-                            );
+                <div className="space-y-2">
+                    <label htmlFor="duration" className="block text-lg">Duration:</label>
+                    <input
+                        id="duration"
+                        value={job.duration}
+                        type="number"
+                        required
+                        min="0"
+                        max="6"
+                        step="1"
+                        className="input w-full border rounded p-2"
+                        onChange={onChange(Number)}
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <label htmlFor="type" className="block text-lg">Type:</label>
+                    <select
+                        id="type"
+                        value={job.type}
+                        required
+                        onChange={onChange(String)}
+                        className="input w-full border rounded p-2"
+                    >
+                        <option value="Work From Home">Work From Home</option>
+                        <option value="Full Time">Full Time</option>
+                        <option value="Part Time">Part Time</option>
+                    </select>
+                </div>
+
+                <div className="space-y-2">
+                    <label htmlFor="maxApplicant" className="block text-lg">Max Number of Applicants:</label>
+                    <input
+                        id="maxApplicant"
+                        value={job.maxApplicant}
+                        type="number"
+                        required
+                        min="0"
+                        step="1"
+                        className="input w-full border rounded p-2"
+                        onChange={onChange(Number)}
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <label htmlFor="maxPositions" className="block text-lg">Max Number of Positions:</label>
+                    <input
+                        id="maxPositions"
+                        value={job.maxPositions}
+                        type="number"
+                        required
+                        min="0"
+                        step="1"
+                        className="input w-full border rounded p-2"
+                        onChange={onChange(Number)}
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <label htmlFor="postingDate" className="block text-lg">Posting Date:</label>
+                    <input
+                        id="postingDate"
+                        type="date"
+                        required
+                        value={new Date(job.postingDate).toLocaleDateString("en-CA")}
+                        className="input w-full border rounded p-2"
+                        onChange={(e) => {
+                            const val = new Date(e.target.value);
+                            setJob({ ...job, postingDate: val });
+                        }}
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <label htmlFor="deadline" className="block text-lg">Deadline:</label>
+                    <input
+                        type="date"
+                        required
+                        className="input w-full border rounded p-2"
+                        value={new Date(job.deadline).toLocaleDateString("en-CA")}
+                        onChange={(e) => {
+                            let deadline = new Date(job.deadline);
+                            const val = new Date(e.target.value);
+                            deadline.setFullYear(val.getFullYear());
+                            deadline.setMonth(val.getMonth());
+                            deadline.setDate(val.getDate());
+                            setJob({ ...job, deadline });
+                        }}
+                    />
+                    <input
+                        type="time"
+                        required
+                        className="input w-full border rounded p-2"
+                        value={new Date(job.deadline).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: false,
                         })}
-                    </div>
-                    <div className="row justify-content-start">
-                        <div style={{ margin: "10px" }}>
-                            <button type="submit" className="btn btn-primary">
-                                Submit
-                            </button>
-                        </div>
-                        <div style={{ margin: "10px" }}>
+                        onChange={(e) => {
+                            let deadline = new Date(job.deadline);
+                            const val = new Date(deadline.toDateString() + " " + e.target.value);
+                            deadline.setHours(val.getHours());
+                            deadline.setMinutes(val.getMinutes());
+                            setJob({ ...job, deadline });
+                        }}
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <label htmlFor="requiredSkills" className="block text-lg">Required Skills:</label>
+                    <button
+                        type="button"
+                        className="bg-green-500 text-white px-4 py-2 rounded mt-2"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            setJob({ ...job, requiredSkills: [...job.requiredSkills, ""] });
+                        }}
+                    >
+                        Add
+                    </button>
+                    {job.requiredSkills.map((item, index) => (
+                        <div key={index} className="flex items-center mt-2">
+                            <input
+                                type="text"
+                                value={item}
+                                required
+                                onChange={(e) => {
+                                    const updatedSkills = job.requiredSkills.map((skill, i) =>
+                                        i === index ? e.target.value : skill
+                                    );
+                                    setJob({ ...job, requiredSkills: updatedSkills });
+                                }}
+                                className="input border rounded p-2 flex-grow"
+                            />
                             <button
-                                className="btn btn-secondary"
+                                type="button"
+                                className="text-red-500 ml-2"
                                 onClick={(e) => {
                                     e.preventDefault();
-                                    window.location = "/";
+                                    setJob({ ...job, requiredSkills: job.requiredSkills.filter((_, i) => i !== index) });
                                 }}
                             >
-                                Cancel
+                                X
                             </button>
                         </div>
-                    </div>
-                </form>
-            </div>
-        );
-    }
-}
+                    ))}
+                </div>
+
+                <div className="flex space-x-4">
+                    <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
+                        Submit
+                    </button>
+                    <button
+                        type="button"
+                        className="bg-gray-500 text-white px-4 py-2 rounded"
+                        onClick={() => {
+                            window.location = "/";
+                        }}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+};
 
 export default JobEdit;
