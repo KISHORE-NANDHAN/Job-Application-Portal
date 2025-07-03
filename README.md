@@ -2,9 +2,6 @@
 
 A Full-Stack MERN Application for Managing Job Applications
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity)
-
 ## Table of Contents
 
 1.  [Introduction](#introduction)
@@ -62,14 +59,9 @@ Contributions are welcome! Here's how you can contribute:
 
 > **Note**: Please follow the existing code style and conventions.  Add appropriate comments and documentation where necessary.
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Contact
-
-> **Note**: Add your contact information here.  For example:
 >
-> Your Name - [Your LinkedIn](Your LinkedIn Profile) - your.email@example.com
+> JAJULA KISHORE NANDHAN - [https://linkedin.com/jajula-kishore-nandhan](Your LinkedIn Profile) - nandhakishorejajula.com
 
 Feel free to reach out with any questions or suggestions!
